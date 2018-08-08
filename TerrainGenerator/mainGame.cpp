@@ -27,8 +27,10 @@ mainGame::mainGame(int argc, char* argv[])
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 	glMatrixMode(GL_PROJECTION);
@@ -40,11 +42,11 @@ mainGame::mainGame(int argc, char* argv[])
 	glutWarpPointer(glutGet(GLUT_WINDOW_WIDTH) / 2, glutGet(GLUT_WINDOW_HEIGHT) / 2);
 
 	_pointMap = new Vertex*[_mapSize];
-	for (int i = 0; i < _mapSize; ++i) 
+	for (int i = 0; i < _mapSize; i++) 
 	{
-		_pointMap[i] = new Vertex[_mapSize];
+		_pointMap[i] = new Vertex[_mapSize]; 
 	}
-
+	
 	CreateMap();
 
 	_mainCamera = new Camera();
@@ -55,6 +57,8 @@ mainGame::mainGame(int argc, char* argv[])
 	_mainCamera->SetCameraRotationXAxis(45.0f);
 	_mainCamera->SetCameraRotationYAxis(90.0f);
 
+	_sub = new Basic_Submarine(_mapSize, _waterLevel, _pointMap);
+
 	glutMainLoop();
 }
 
@@ -63,7 +67,7 @@ mainGame::~mainGame()
 	delete _mainCamera;
 	_mainCamera = nullptr;
 
-	for (int i = 0; i < _mapSize; ++i)
+	for (int i = 0; i < _mapSize; i++)
 	{
 		delete[] _pointMap;
 	}
@@ -80,6 +84,7 @@ void mainGame::Display()
 	glTranslatef(-_mainCamera->GetCameraPosition('x'), -_mainCamera->GetCameraPosition('y'), -_mainCamera->GetCameraPosition('z'));
 
 	DrawTerrain();
+	_sub->Draw();
 
 	glutSwapBuffers();
 }
@@ -114,6 +119,11 @@ void mainGame::ProcessSpecialKeys(int key, int x, int y)
 			_mouseEnabled = !_mouseEnabled;
 			break;
 
+		case GLUT_KEY_F5:
+			CreateMap();
+			_sub->UpdateSub();
+			break;
+
 		case GLUT_KEY_F4:
 			Vector3 newposition;
 			std::cout << "cam x" << std::endl;
@@ -124,6 +134,8 @@ void mainGame::ProcessSpecialKeys(int key, int x, int y)
 			std::cin >> newposition.Z;
 			_mainCamera->SetCameraPosition(newposition);
 			break;
+
+		
 	}
 }
 
@@ -162,14 +174,14 @@ void mainGame::ProcessKeys(unsigned char key, int x, int y)
 		case 'r': //Up
 			_mainCamera->SetCameraPosition(
 				_mainCamera->GetCameraPosition('x'),
-				_mainCamera->GetCameraPosition('y') + _camMovementSpeed,
+				_mainCamera->GetCameraPosition('y') + _camMovementSpeed / 2,
 				_mainCamera->GetCameraPosition('z'));
 			break;
 
 		case 'f': //Down
 			_mainCamera->SetCameraPosition(
 				_mainCamera->GetCameraPosition('x'),
-				_mainCamera->GetCameraPosition('y') - _camMovementSpeed,
+				_mainCamera->GetCameraPosition('y') - _camMovementSpeed / 2,
 				_mainCamera->GetCameraPosition('z'));
 			break;
 
@@ -219,10 +231,10 @@ void mainGame::MousePassiveMove(int x, int y)
 
 void mainGame::CreateMap()
 {
-	double _frequency = 16;
-	int _octaves = 4;
+	double _frequency = 0.15;
+	int _octaves = 512;
 
-	float _xOff = _mapSize / 100 - 0.5;
+	float _xOff = _mapSize / 100 + 0.5;
 	float _yOff = _mapSize / 100 - 0.5;
 
 	siv::PerlinNoise* perlin = new siv::PerlinNoise();
@@ -232,12 +244,12 @@ void mainGame::CreateMap()
 	{
 		for (int y = 0; y != _mapSize; y++)
 		{
-			_pointMap[x][y].X = x;
-			_pointMap[x][y].Y = perlin->octaveNoise(_xOff, _yOff, _octaves);
-			_pointMap[x][y].Z = y;
-			_yOff += 0.1 * (perlin->noise0_1(_yOff) * _frequency);
+			_pointMap[x][y].X = (_mapSize / 10) * x;
+			_pointMap[x][y].Y = (_mapSize / 8) * perlin->octaveNoise(_xOff, _yOff, _octaves);
+			_pointMap[x][y].Z = (_mapSize / 10) * y;
+			_yOff += 0.125 * (perlin->noise0_1(_yOff) / _frequency);
 		}
-		_xOff += 0.1 * (perlin->noise0_1(_xOff) * _frequency);
+		_xOff += 0.125 * (perlin->noise0_1(_xOff) / _frequency);
 	}
 
 	delete perlin;
@@ -246,29 +258,15 @@ void mainGame::CreateMap()
 
 UINT32 mainGame::GetTimeSeed()
 {
-	UINT32 _timeSeed = time(0);
+	UINT32 _timeSeed = time(NULL);
 	return _timeSeed;
 }
 
 void mainGame::DrawTerrain()
 {
 	glPushMatrix();
-
 	glTranslatef(-(_mapSize / 2), 0.0f, -(_mapSize / 2));
 
-	for (int j = 0; j != _mapSize - 1; j++)
-	{
-		glColor3f(0.5f, 0.5f, 0.5f);
-		glPolygonMode(GL_FRONT, GL_FILL);
-		glBegin(GL_TRIANGLE_STRIP);
-		for (int i = 0; i != _mapSize; i++)
-		{
-			glVertex3f(_pointMap[i][j].X, _pointMap[i][j].Y, _pointMap[i][j].Z);	
-			glVertex3f(_pointMap[i][j + 1].X, _pointMap[i][j + 1].Y, _pointMap[i][j + 1].Z);
-		}
-		glEnd();
-	}
-	
 	for (int j = 0; j != _mapSize - 1; j++)
 	{
 		glColor3f(0.0f, 0.0f, 0.0f);
@@ -276,20 +274,43 @@ void mainGame::DrawTerrain()
 		glBegin(GL_TRIANGLE_STRIP);
 		for (int i = 0; i != _mapSize; i++)
 		{
-			glVertex3f(_pointMap[i][j].X, _pointMap[i][j].Y + 0.0005, _pointMap[i][j].Z);
-			glVertex3f(_pointMap[i][j + 1].X, _pointMap[i][j + 1].Y + 0.0005f, _pointMap[i][j + 1].Z);
+			glVertex3f(_pointMap[i][j].X, _pointMap[i][j].Y, _pointMap[i][j].Z);
+			glVertex3f(_pointMap[i][j + 1].X, _pointMap[i][j + 1].Y, _pointMap[i][j + 1].Z);
 		}
 		glEnd();
 	}
 	
+	for (int j = 0; j != _mapSize - 1; j++)
+	{
+		glPolygonMode(GL_FRONT, GL_FILL);
+		glEnable(GL_POLYGON_OFFSET_FILL);
+		glPolygonOffset(0.0, 1.0);
+		glBegin(GL_TRIANGLE_STRIP);
+		for (int i = 0; i != _mapSize; i++)
+		{
+			if (_pointMap[i][j].Y <= _waterLevel + 0.25f)
+				glColor3f(0.3f, 0.2f, 0.2f);
+			else
+				glColor3f(0.2, 0.3f, 0.1f);
+			glVertex3f(_pointMap[i][j].X, _pointMap[i][j].Y, _pointMap[i][j].Z);
+
+			if (_pointMap[i][j + 1].Y <= _waterLevel + 0.25f)
+				glColor3f(0.3f, 0.2f, 0.2f);
+			else
+				glColor3f(0.2, 0.3f, 0.1f);
+			glVertex3f(_pointMap[i][j + 1].X, _pointMap[i][j + 1].Y, _pointMap[i][j + 1].Z);
+		}
+		glEnd();
+		glDisable(GL_POLYGON_OFFSET_FILL);
+	}
+
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glBegin(GL_QUADS);
-	glColor3f(0.15f, 0.35f, 0.65);
-	glVertex3f(_mapSize - 1.0f, -0.25f, _mapSize - 1.0f);
-	glVertex3f(_mapSize - 1.0f, -0.25f, 0.0f);
-	glVertex3f(0.0f, -0.25f, 0.0f);
-	glVertex3f(0.0f, -0.25f, _mapSize - 1.0f);
+	glColor3f(0.3f, 0.5f, 0.9f);
+	glVertex3f(_pointMap[_mapSize - 1][_mapSize - 1].X, _waterLevel, _pointMap[_mapSize - 1][_mapSize - 1].Z);
+	glVertex3f(_pointMap[_mapSize - 1][_mapSize - 1].X, _waterLevel, _pointMap[0][0].Z);
+	glVertex3f(_pointMap[0][0].X, _waterLevel, _pointMap[0][0].Z);
+	glVertex3f(_pointMap[0][0].X, _waterLevel, _pointMap[_mapSize - 1][_mapSize - 1].Z);
 	glEnd();
-
 	glPopMatrix();
 }

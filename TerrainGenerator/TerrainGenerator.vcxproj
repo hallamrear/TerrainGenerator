@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{7E0E4ED4-52C2-441D-A783-B0A4B0664999}</ProjectGuid>
     <RootNamespace>TerrainGenerator</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -121,6 +121,7 @@
     <ClCompile Include="mainGame.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Basic_Submarine.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Commons.h" />
     <ClInclude Include="GLUTCallbacks.h" />

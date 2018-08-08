@@ -4,16 +4,21 @@
 #include "Commons.h"
 #include "Camera.h"
 
+#include "Basic_Submarine.h"
+
 class mainGame
 {
 private:
 	Vertex * * _pointMap;
-	int _mapSize = 128;
+	int _mapSize = 32;
+	float _waterLevel = -0.25f;
 	float _closePlane = 0.1f;
 	float _farPlane = 100.0f;
 	Camera * _mainCamera;
-	float _camMovementSpeed = 0.25f;
+	float _camMovementSpeed = 0.5f;
 	bool _mouseEnabled = true;
+
+	Basic_Submarine * _sub;
 
 public:
 

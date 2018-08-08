@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+/.vs/TerrainGenerator/v15/ipch/AutoPCH
+/TerrainGenerator/x64/Debug/TerrainGenerator.tlog
+/TerrainGenerator/x64/Debug
+/x64/Debug
+/TerrainGenerator/Debug/TerrainGenerator.tlog/unsuccessfulbuild
